@@ -10,7 +10,8 @@ from sklearn.metrics import mean_squared_error
 
 HPO_EXPERIMENT_NAME = "random-forest-hyperopt"
 EXPERIMENT_NAME = "random-forest-best-models"
-RF_PARAMS = ['max_depth', 'n_estimators', 'min_samples_split', 'min_samples_leaf', 'random_state']
+RF_PARAMS = ['max_depth', 'n_estimators',
+             'min_samples_split', 'min_samples_leaf', 'random_state']
 
 mlflow.set_tracking_uri("http://127.0.0.1:5000")
 mlflow.set_experiment(EXPERIMENT_NAME)
@@ -38,7 +39,8 @@ def train_and_log_model(data_path, params):
         # Evaluate model on the validation and test sets
         val_rmse = mean_squared_error(y_val, rf.predict(X_val), squared=False)
         mlflow.log_metric("val_rmse", val_rmse)
-        test_rmse = mean_squared_error(y_test, rf.predict(X_test), squared=False)
+        test_rmse = mean_squared_error(
+            y_test, rf.predict(X_test), squared=False)
         mlflow.log_metric("test_rmse", test_rmse)
 
 
@@ -71,10 +73,13 @@ def run_register_model(data_path: str, top_n: int):
 
     # Select the model with the lowest test RMSE
     experiment = client.get_experiment_by_name(EXPERIMENT_NAME)
-    # best_run = client.search_runs( ...  )[0]
+    best_run = client.search_runs(experiment_ids=[experiment.experiment_id],
+                                  order_by=["metrics.rmse ASC"])[0]
 
     # Register the best model
-    # mlflow.register_model( ... )
+    model_uri = f"runs:/{best_run.info.run_id}/model"
+    mlflow.register_model(model_uri=model_uri,
+                          name="NYC-taxi-regressor")
 
 
 if __name__ == '__main__':
